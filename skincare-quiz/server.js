@@ -1,5 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
+const fs = require('fs');
 const path = require('path');
 
 const app = express();
@@ -8,6 +9,13 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
 });
+
+// Crea las tablas automáticamente si no existen (safe: usa IF NOT EXISTS)
+async function runMigrations() {
+  const sql = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
+  await pool.query(sql);
+  console.log('Tablas verificadas/creadas correctamente.');
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -66,4 +74,12 @@ app.get('/api/stats', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+
+runMigrations()
+  .then(() => {
+    app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
+  })
+  .catch(err => {
+    console.error('Error al crear tablas:', err.message);
+    process.exit(1);
+  });
