@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skincare Quiz — Descubre tu rutina ideal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #fdf6f0;
+      color: #2c1a0e;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 680px;
+      width: 100%;
+    }
+
+    /* HEADER */
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .header .tag {
+      display: inline-block;
+      background: #e8c4b0;
+      color: #7a3e1a;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 2rem;
+      font-weight: normal;
+      color: #4a2010;
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: #8a5c40;
+      font-size: 0.95rem;
+      font-style: italic;
+    }
+
+    /* PROGRESS */
+    .progress-wrap {
+      margin-bottom: 28px;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #b07a5a;
+      margin-bottom: 8px;
+    }
+    .progress-bar {
+      height: 4px;
+      background: #f0ddd0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #d4846a, #c26045);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* CARD */
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 36px 40px;
+      box-shadow: 0 8px 40px rgba(100, 40, 10, 0.08);
+      animation: fadeIn 0.35s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .question-num {
+      font-size: 0.78rem;
+      color: #c08060;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .question-text {
+      font-size: 1.25rem;
+      color: #3a1e0a;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    /* OPTIONS */
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 1.5px solid #f0ddd0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #fdf8f5;
+    }
+    .option:hover {
+      border-color: #d4846a;
+      background: #fff5ef;
+    }
+    .option.selected {
+      border-color: #c26045;
+      background: #fff0e8;
+    }
+    .option-letter {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      border-radius: 50%;
+      background: #f0ddd0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: bold;
+      color: #c26045;
+      margin-top: 1px;
+    }
+    .option.selected .option-letter {
+      background: #c26045;
+      color: #fff;
+    }
+    .option-text {
+      font-size: 0.95rem;
+      color: #4a2a14;
+      line-height: 1.4;
+    }
+
+    /* BUTTONS */
+    .btn-wrap {
+      margin-top: 28px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .btn {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: #c26045;
+      color: #fff;
+    }
+    .btn-primary:hover { background: #a84e38; }
+    .btn-primary:disabled { background: #ddb8a8; cursor: default; }
+    .btn-ghost {
+      background: transparent;
+      color: #c26045;
+      border: 1.5px solid #e8c4b0;
+    }
+    .btn-ghost:hover { background: #fff5ef; }
+
+    /* RESULT */
+    .result { display: none; animation: fadeIn 0.5s ease; }
+    .result-badge {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+      margin: 0 auto 20px;
+    }
+    .result-title {
+      font-size: 1.6rem;
+      color: #4a2010;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .result-subtitle {
+      text-align: center;
+      color: #9a5c3a;
+      font-style: italic;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+    .result-desc {
+      background: #fdf6f0;
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-size: 0.93rem;
+      color: #5a3520;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+    .result-tips h3 {
+      font-size: 0.85rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #c26045;
+      margin-bottom: 12px;
+    }
+    .tip-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.92rem;
+      color: #4a2a14;
+      line-height: 1.5;
+    }
+    .tip-dot {
+      width: 6px;
+      height: 6px;
+      min-width: 6px;
+      border-radius: 50%;
+      background: #c26045;
+      margin-top: 7px;
+    }
+    .btn-restart {
+      display: block;
+      width: 100%;
+      margin-top: 28px;
+      padding: 14px;
+      background: #c26045;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-restart:hover { background: #a84e38; }
+
+    /* INTRO */
+    .intro { text-align: center; padding: 10px 0 4px; }
+    .intro p { color: #8a5c40; font-size: 0.93rem; line-height: 1.6; margin-bottom: 24px; }
+    .btn-start {
+      padding: 14px 40px;
+      background: #c26045;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-start:hover { background: #a84e38; }
+
+    @media (max-width: 520px) {
+      .card { padding: 28px 22px; }
+      .header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="tag">Skincare Quiz</div>
+    <h1>Descubre tu rutina de skincare ideal</h1>
+    <p>10 preguntas · resultado personalizado</p>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap" id="progressWrap" style="display:none">
+    <div class="progress-info">
+      <span id="progressLabel">Pregunta 1 de 10</span>
+      <span id="progressPct">10%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+  </div>
+
+  <!-- CARD -->
+  <div class="card" id="mainCard">
+
+    <!-- INTRO -->
+    <div class="intro" id="introScreen">
+      <p>Responde con honestidad sobre tus hábitos y cómo se comporta tu piel. Al final recibirás un diagnóstico y recomendaciones adaptadas a tu tipo de piel.</p>
+      <button class="btn-start" onclick="startQuiz()">Comenzar quiz</button>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="quizScreen" style="display:none">
+      <div class="question-num" id="qNum">Pregunta 1 / 10</div>
+      <div class="question-text" id="qText"></div>
+      <div class="options" id="optionsWrap"></div>
+      <div class="btn-wrap">
+        <button class="btn btn-ghost" id="btnBack" onclick="prevQ()" style="display:none">← Atrás</button>
+        <button class="btn btn-primary" id="btnNext" onclick="nextQ()" disabled>Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="result" id="resultScreen">
+      <div class="result-badge" id="rBadge"></div>
+      <div class="result-title" id="rTitle"></div>
+      <div class="result-subtitle" id="rSubtitle"></div>
+      <div class="result-desc" id="rDesc"></div>
+      <div class="result-tips">
+        <h3>Tu rutina recomendada</h3>
+        <div id="rTips"></div>
+      </div>
+      <button class="btn-restart" onclick="restartQuiz()">Hacer el quiz de nuevo</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const questions = [
+    {
+      text: "¿Cómo luce tu piel a las pocas horas de lavarte la cara?",
+      options: [
+        { text: "Brillante y con exceso de grasa, especialmente en la frente, nariz y mentón", type: "oily" },
+        { text: "Se siente tensa, reseca y puede descamar un poco", type: "dry" },
+        { text: "Grasa solo en la zona T, normal o seca en las mejillas", type: "combo" },
+        { text: "Cómoda, sin cambios notables ni sequedad ni brillo", type: "normal" },
+      ]
+    },
+    {
+      text: "¿Con qué frecuencia aparecen granitos o espinillas en tu piel?",
+      options: [
+        { text: "Con frecuencia, principalmente en frente, nariz y mentón", type: "oily" },
+        { text: "Rara vez; mi piel tiende más a la sequedad", type: "dry" },
+        { text: "Ocasionalmente, sobre todo en la zona T", type: "combo" },
+        { text: "Casi nunca, solo en ciclos hormonales", type: "normal" },
+      ]
+    },
+    {
+      text: "¿Cómo reacciona tu piel ante nuevos productos?",
+      options: [
+        { text: "Suele ponerse rojiza, picar o irritarse con facilidad", type: "sensitive" },
+        { text: "La absorbe bien pero no cambia demasiado", type: "normal" },
+        { text: "Se engrasa más si el producto es muy pesado", type: "oily" },
+        { text: "La piel se siente incómoda o tira si el producto es ligero", type: "dry" },
+      ]
+    },
+    {
+      text: "¿Cómo describes el tamaño de tus poros?",
+      options: [
+        { text: "Muy visibles, dilatados especialmente en la zona T", type: "oily" },
+        { text: "Casi invisibles; mi piel luce bastante fina", type: "dry" },
+        { text: "Visibles solo en algunas zonas (nariz, frente)", type: "combo" },
+        { text: "Normales, ni muy grandes ni invisibles", type: "normal" },
+      ]
+    },
+    {
+      text: "¿Con qué frecuencia usas protector solar?",
+      options: [
+        { text: "Todos los días sin falta, incluso en invierno o nublado", type: "normal" },
+        { text: "Solo cuando voy a la playa o hay sol intenso", type: "aging" },
+        { text: "Casi nunca, siento que me tapa los poros", type: "oily" },
+        { text: "Lo uso cuando me acuerdo, no tengo una rutina fija", type: "aging" },
+      ]
+    },
+    {
+      text: "¿Cómo describes tu rutina de skincare actual?",
+      options: [
+        { text: "Limpiador + hidratante + SPF todos los días", type: "normal" },
+        { text: "Solo agua o jabón; productos extra me parecen innecesarios", type: "dry" },
+        { text: "Varios pasos: sérum, contorno de ojos, mascarillas, etc.", type: "aging" },
+        { text: "Inconsistente, uso lo que tengo a mano", type: "combo" },
+      ]
+    },
+    {
+      text: "¿En qué zona de tu cara aparecen las primeras líneas finas?",
+      options: [
+        { text: "Alrededor de los ojos (patas de gallo) y frente", type: "aging" },
+        { text: "No tengo líneas finas aún", type: "normal" },
+        { text: "Las mejillas, que se ven un poco apagadas", type: "dry" },
+        { text: "No me he fijado en líneas; me preocupa más el brillo/acné", type: "oily" },
+      ]
+    },
+    {
+      text: "¿Cómo se siente tu piel después de limpiarla?",
+      options: [
+        { text: "Tira, se siente apretada o levemente incómoda", type: "dry" },
+        { text: "Fresca, limpia y cómoda", type: "normal" },
+        { text: "Limpia en mejillas, pero la zona T vuelve a engrasar rápido", type: "combo" },
+        { text: "Sensación de ardor o enrojecimiento leve", type: "sensitive" },
+      ]
+    },
+    {
+      text: "¿Qué preocupación de piel quieres tratar prioritariamente?",
+      options: [
+        { text: "Acné, brillos excesivos y poros dilatados", type: "oily" },
+        { text: "Sequedad, descamación e incomodidad", type: "dry" },
+        { text: "Manchas, líneas finas y pérdida de luminosidad", type: "aging" },
+        { text: "Rojeces, reactividad y fragilidad", type: "sensitive" },
+      ]
+    },
+    {
+      text: "¿Cuánta agua bebes al día y cómo describes tu alimentación?",
+      options: [
+        { text: "Bebo bastante agua y como equilibrado", type: "normal" },
+        { text: "Poco agua, dieta alta en azúcar o lácteos", type: "oily" },
+        { text: "Poco agua, suelo sentirme deshidratada", type: "dry" },
+        { text: "Intento cuidarme pero el estrés afecta mi piel", type: "sensitive" },
+      ]
+    },
+  ];
+
+  const results = {
+    oily: {
+      emoji: "✨",
+      title: "Piel Grasa con tendencia al acné",
+      subtitle: "Tu piel produce sebo en exceso — pero tiene solución.",
+      desc: "Tu piel fabrica más aceite del que necesita, lo que puede causar brillos constantes, poros dilatados y brotes de acné. Esto no significa que debas secarla con productos agresivos; de hecho, hacerlo agrava el problema. El secreto está en limpiar suavemente, hidratar con texturas ligeras y usar activos que regulen el sebo sin deshidratar.",
+      tips: [
+        "Limpiador con ácido salicílico o niacinamida, mañana y noche.",
+        "Tónico sin alcohol para equilibrar el pH tras la limpieza.",
+        "Hidratante oil-free en gel; nunca te saltes este paso.",
+        "Sérum de niacinamida al 10% para regular el sebo y cerrar poros.",
+        "SPF de fórmula ligera o en gel — es indispensable incluso con piel grasa.",
+      ]
+    },
+    dry: {
+      emoji: "🌸",
+      title: "Piel Seca y posiblemente sensible",
+      subtitle: "Tu barrera cutánea necesita nutrición y protección.",
+      desc: "Tu piel produce poco sebo y pierde agua fácilmente, lo que la hace sentir tensa, apagada e incluso descamada. Necesita ingredientes que restauren la barrera cutánea (ceramidas, ácidos grasos) y que retengan la humedad (ácido hialurónico, glicerina). Evita los limpiadores en espuma agresivos y los tónicos astringentes.",
+      tips: [
+        "Limpiador cremoso o en aceite que no elimine la barrera lipídica.",
+        "Tónico hidratante con glicerina o agua de rosas.",
+        "Sérum con ácido hialurónico aplicado sobre piel húmeda.",
+        "Crema rica en ceramidas + manteca de karité para sellar la hidratación.",
+        "Aceite facial en la noche (rosehip, escualano) para regenerar.",
+      ]
+    },
+    combo: {
+      emoji: "⚖️",
+      title: "Piel Mixta",
+      subtitle: "Tienes dos tipos de piel en una sola cara.",
+      desc: "La zona T (frente, nariz, mentón) se engrasa y puede presentar poros dilatados, mientras que las mejillas están equilibradas o incluso secas. El reto es tratar ambas zonas sin agravar ninguna. Opta por productos balanceados y considera una rutina en dos zonas si el desequilibrio es muy marcado.",
+      tips: [
+        "Limpiador en gel suave que no sobre-seque las mejillas.",
+        "Aplica un tónico astringente solo en la zona T.",
+        "Hidratante de textura media — gel-crema es tu mejor aliado.",
+        "Mascarilla de arcilla una vez a la semana, solo en la zona T.",
+        "SPF fluido no comedogénico para todo el rostro.",
+      ]
+    },
+    normal: {
+      emoji: "🌿",
+      title: "Piel Normal y equilibrada",
+      subtitle: "Tienes la base ideal — solo necesitas mantenerla.",
+      desc: "Tu piel produce sebo en cantidad justa, no tiende a irritarse con facilidad y mantiene una hidratación bastante estable. Eso no significa que no necesite cuidado; al contrario, una rutina básica constante es la clave para que tu piel luzca bien a largo plazo. Pon el foco en prevención y antioxidantes.",
+      tips: [
+        "Limpiador suave mañana y noche para mantener limpia la piel sin alterarla.",
+        "Vitamina C por las mañanas para antioxidación y luminosidad.",
+        "Hidratante ligera o gel-crema adaptada a la estación.",
+        "SPF 50 todos los días — es el antienvejecimiento más eficaz.",
+        "Retinol o péptidos de noche para prevención temprana.",
+      ]
+    },
+    aging: {
+      emoji: "🌹",
+      title: "Piel con enfoque Anti-edad",
+      subtitle: "Priorizas la firmeza, luminosidad y prevención.",
+      desc: "Tu piel ya muestra signos de madurez o tiene como objetivo principal frenar el envejecimiento. Las líneas de expresión, pérdida de firmeza y manchas son tus principales preocupaciones. Los activos clave son el retinol, la vitamina C, los péptidos y el ácido hialurónico. La constancia y el SPF son más importantes que cualquier producto de lujo.",
+      tips: [
+        "Sérum de vitamina C al 15–20% por las mañanas (antioxidante y unificador).",
+        "Retinol o bakuchiol de noche — empieza al 0.2% y sube gradualmente.",
+        "Contorno de ojos con cafeína o péptidos para la zona periocular.",
+        "Hidratante con ceramidas y péptidos para firmeza y barrera.",
+        "SPF 50+ sin excusas: el 80% del envejecimiento visible es solar.",
+      ]
+    },
+    sensitive: {
+      emoji: "🌼",
+      title: "Piel Sensible y reactiva",
+      subtitle: "Tu piel habla fuerte cuando algo no le sienta bien.",
+      desc: "Tu piel reacciona fácilmente con rojeces, picor o ardor ante nuevos productos, cambios climáticos o el estrés. Esto puede deberse a una barrera cutánea debilitada o a una predisposición genética. La clave es simplificar la rutina, usar ingredientes mínimos y siempre hacer prueba de parche antes de incorporar algo nuevo.",
+      tips: [
+        "Limpiador micelar o en leche, sin fragancia ni sulfatos.",
+        "Tónico calmante con agua termal, aloe vera o centella asiatica.",
+        "Hidratante con ceramidas, pantenol o avenanthramidas (avena).",
+        "Evita retinol fuerte, ácidos agresivos y fragancias sintéticas.",
+        "SPF mineral (óxido de zinc o dióxido de titanio) que no irrite.",
+      ]
+    }
+  };
+
+  let current = 0;
+  let answers = Array(10).fill(null);
+
+  function startQuiz() {
+    document.getElementById("introScreen").style.display = "none";
+    document.getElementById("quizScreen").style.display = "block";
+    document.getElementById("progressWrap").style.display = "block";
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    const q = questions[current];
+    document.getElementById("qNum").textContent = `Pregunta ${current + 1} / 10`;
+    document.getElementById("qText").textContent = q.text;
+
+    const wrap = document.getElementById("optionsWrap");
+    wrap.innerHTML = "";
+    const letters = ["A", "B", "C", "D"];
+    q.options.forEach((opt, i) => {
+      const div = document.createElement("div");
+      div.className = "option" + (answers[current] === i ? " selected" : "");
+      div.innerHTML = `<div class="option-letter">${letters[i]}</div><div class="option-text">${opt.text}</div>`;
+      div.onclick = () => selectOption(i);
+      wrap.appendChild(div);
+    });
+
+    document.getElementById("btnNext").disabled = answers[current] === null;
+    document.getElementById("btnNext").textContent = current === 9 ? "Ver resultado" : "Siguiente →";
+    document.getElementById("btnBack").style.display = current > 0 ? "inline-block" : "none";
+
+    const pct = Math.round(((current + 1) / 10) * 100);
+    document.getElementById("progressFill").style.width = pct + "%";
+    document.getElementById("progressLabel").textContent = `Pregunta ${current + 1} de 10`;
+    document.getElementById("progressPct").textContent = pct + "%";
+  }
+
+  function selectOption(index) {
+    answers[current] = index;
+    document.querySelectorAll(".option").forEach((el, i) => {
+      el.classList.toggle("selected", i === index);
+    });
+    document.getElementById("btnNext").disabled = false;
+  }
+
+  function nextQ() {
+    if (answers[current] === null) return;
+    if (current === 9) {
+      showResult();
+    } else {
+      current++;
+      renderQuestion();
+    }
+  }
+
+  function prevQ() {
+    if (current > 0) { current--; renderQuestion(); }
+  }
+
+  function showResult() {
+    const scores = { oily: 0, dry: 0, combo: 0, normal: 0, aging: 0, sensitive: 0 };
+    answers.forEach((answerIndex, qIndex) => {
+      if (answerIndex !== null) {
+        const type = questions[qIndex].options[answerIndex].type;
+        scores[type]++;
+      }
+    });
+
+    const winner = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+    const r = results[winner];
+
+    document.getElementById("rBadge").textContent = r.emoji;
+    document.getElementById("rTitle").textContent = r.title;
+    document.getElementById("rSubtitle").textContent = r.subtitle;
+    document.getElementById("rDesc").textContent = r.desc;
+
+    const tipsEl = document.getElementById("rTips");
+    tipsEl.innerHTML = r.tips.map(t =>
+      `<div class="tip-item"><div class="tip-dot"></div><span>${t}</span></div>`
+    ).join("");
+
+    document.getElementById("progressWrap").style.display = "none";
+    document.getElementById("quizScreen").style.display = "none";
+    const res = document.getElementById("resultScreen");
+    res.style.display = "block";
+    res.style.animation = "none";
+    res.offsetHeight;
+    res.style.animation = "";
+  }
+
+  function restartQuiz() {
+    current = 0;
+    answers = Array(10).fill(null);
+    document.getElementById("resultScreen").style.display = "none";
+    document.getElementById("progressWrap").style.display = "block";
+    document.getElementById("quizScreen").style.display = "block";
+    renderQuestion();
+  }
+</script>
+</body>
+</html>
