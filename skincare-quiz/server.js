@@ -80,6 +80,7 @@ runMigrations()
     app.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));
   })
   .catch(err => {
-    console.error('Error al crear tablas:', err.message);
+    console.error('Error al crear tablas:', err.message ?? err);
+    console.error('DATABASE_URL definida:', !!process.env.DATABASE_URL);
     process.exit(1);
   });
