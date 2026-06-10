@@ -1,6 +1,3 @@
--- Extensión para gen_random_uuid() en Postgres < 13
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
 -- Tabla de usuarios (identificados por UUID generado en el navegador)
 CREATE TABLE IF NOT EXISTS quiz_users (
     id          UUID        PRIMARY KEY,
