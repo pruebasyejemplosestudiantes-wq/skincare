@@ -57,6 +57,31 @@ DO $$ BEGIN
   ALTER TABLE quiz_users ADD COLUMN email TEXT;
 EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
+-- Tabla de clics en "Ir a pagar"
+CREATE TABLE IF NOT EXISTS pay_clicks (
+    id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID        REFERENCES quiz_users(id) ON DELETE SET NULL,
+    email       TEXT,
+    clicked_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Tabla de pagos (webhooks de Hotmart)
+CREATE TABLE IF NOT EXISTS payments (
+    id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    transaction_id  TEXT        UNIQUE,
+    email           TEXT,
+    name            TEXT,
+    status          TEXT,
+    event_type      TEXT,
+    raw_payload     JSONB,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+DO $$ BEGIN
+  ALTER TABLE quiz_users ADD COLUMN email TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
 -- Índices (después de garantizar que las columnas existen; se ignoran si ya existen o fallan)
 DO $$ BEGIN
   CREATE INDEX IF NOT EXISTS idx_responses_user_id ON quiz_responses(user_id);

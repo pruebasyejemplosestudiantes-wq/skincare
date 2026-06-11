@@ -397,7 +397,7 @@
       <button class="btn-reveal" onclick="submitEmail()">Ver mi resultado →</button>
       <p class="email-disclaimer">No spam. Solo tu diagnóstico y tips de skincare.</p>
       <div class="pay-divider">o si ya estás lista</div>
-      <a class="btn-pay" href="https://pay.hotmart.com/B106273081B?sck=HOTMART_PRODUCT_PAGE&off=168s1mnf&hotfeature=32&_gl=1*1d559dg*_gcl_aw*R0NMLjE3ODExOTA3NzguQ2p3S0NBand1YW5SQmhCU0Vpd0FZNXk2VjNIemF2OVRGamJYYmFnZ0REQ2RNV2lfVEpiSE5WUU45b2p0YmxlQ0RYUmRSM3NzbUUxRWhCb0NCU0VRQXZEX0J3RQ..*_gcl_au*OTIyODU4MTA2LjE3ODExOTAzMTQ.*FPAU*OTIyODU4MTA2LjE3ODExOTAzMTQ.*_ga*ODA4NjQ2NTU0LjE3ODExOTAzMTM.*_ga_GQH2V1F11Q*czE3ODExOTAzMTMkbzEkZzEkdDE3ODExOTE3MjQkajYwJGwwJGg2MzUwODAyMzE.&bid=1781191728716" target="_blank" rel="noopener">Ir a pagar ahora</a>
+      <a class="btn-pay" href="https://pay.hotmart.com/B106273081B?sck=HOTMART_PRODUCT_PAGE&off=168s1mnf&hotfeature=32&_gl=1*1d559dg*_gcl_aw*R0NMLjE3ODExOTA3NzguQ2p3S0NBand1YW5SQmhCU0Vpd0FZNXk2VjNIemF2OVRGamJYYmFnZ0REQ2RNV2lfVEpiSE5WUU45b2p0YmxlQ0RYUmRSM3NzbUUxRWhCb0NCU0VRQXZEX0J3RQ..*_gcl_au*OTIyODU4MTA2LjE3ODExOTAzMTQ.*FPAU*OTIyODU4MTA2LjE3ODExOTAzMTQ.*_ga*ODA4NjQ2NTU0LjE3ODExOTAzMTM.*_ga_GQH2V1F11Q*czE3ODExOTAzMTMkbzEkZzEkdDE3ODExOTE3MjQkajYwJGwwJGg2MzUwODAyMzE.&bid=1781191728716" target="_blank" rel="noopener" onclick="trackPayClick()">Ir a pagar ahora</a>
     </div>
 
     <!-- RESULT -->
@@ -777,6 +777,15 @@
     res.style.animation = "none";
     res.offsetHeight;
     res.style.animation = "";
+  }
+
+  function trackPayClick() {
+    const email = document.getElementById('emailInput')?.value?.trim() || null;
+    fetch('/api/track-pay-click', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: getUserId(), email }),
+    }).catch(() => {});
   }
 
   function restartQuiz() {
