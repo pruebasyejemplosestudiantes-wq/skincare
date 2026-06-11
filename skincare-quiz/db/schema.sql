@@ -12,18 +12,14 @@ CREATE TABLE IF NOT EXISTS quiz_responses (
     user_id         UUID        NOT NULL REFERENCES quiz_users(id) ON DELETE CASCADE,
     answers         JSONB       NOT NULL DEFAULT '[]',
     questions_done  INT         NOT NULL DEFAULT 0,
-    result_type     VARCHAR(20),             -- NULL si no terminó
-    scores          JSONB,                   -- NULL si no terminó
+    result_type     VARCHAR(20),
+    scores          JSONB,
     is_completed    BOOLEAN     NOT NULL DEFAULT false,
     started_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     completed_at    TIMESTAMPTZ
 );
 
-CREATE INDEX IF NOT EXISTS idx_responses_user_id   ON quiz_responses(user_id);
-CREATE INDEX IF NOT EXISTS idx_responses_result    ON quiz_responses(result_type);
-CREATE INDEX IF NOT EXISTS idx_responses_started   ON quiz_responses(started_at);
-
--- Migración segura para tablas ya existentes
+-- Migraciones seguras (columnas que pueden faltar en tablas preexistentes)
 DO $$ BEGIN
   ALTER TABLE quiz_responses ALTER COLUMN result_type DROP NOT NULL;
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
@@ -50,4 +46,17 @@ EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
 DO $$ BEGIN
   ALTER TABLE quiz_responses ALTER COLUMN answers SET DEFAULT '[]';
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+-- Índices (después de garantizar que las columnas existen; se ignoran si ya existen o fallan)
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_responses_user_id ON quiz_responses(user_id);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_responses_result ON quiz_responses(result_type);
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_responses_started ON quiz_responses(started_at);
 EXCEPTION WHEN OTHERS THEN NULL; END $$;

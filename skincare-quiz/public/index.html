@@ -335,12 +335,13 @@
 <script>
   const questions = [
     {
-      text: "¿Cómo luce tu piel a las pocas horas de lavarte la cara?",
+      text: "¿Cómo identificas tu tipo de piel?",
       options: [
-        { text: "Brillante y con exceso de grasa, especialmente en la frente, nariz y mentón", type: "oily" },
-        { text: "Se siente tensa, reseca y puede descamar un poco", type: "dry" },
-        { text: "Grasa solo en la zona T, normal o seca en las mejillas", type: "combo" },
-        { text: "Cómoda, sin cambios notables ni sequedad ni brillo", type: "normal" },
+        { text: "Con acné — tengo brotes, granitos o espinillas con frecuencia", type: "oily" },
+        { text: "Con manchas — tengo zonas oscuras, hiperpigmentación o el tono desigual", type: "manchas" },
+        { text: "Reseca — siento tirantez, descamación o incomodidad constante", type: "dry" },
+        { text: "Grasosa o mixta — me brilla el rostro o solo la zona T (frente, nariz, mentón)", type: "combo" },
+        { text: "No sé cómo identificarla — necesito que el quiz me ayude a descubrirlo", type: "unknown" },
       ]
     },
     {
@@ -504,6 +505,19 @@
         "Evita retinol fuerte, ácidos agresivos y fragancias sintéticas.",
         "SPF mineral (óxido de zinc o dióxido de titanio) que no irrite.",
       ]
+    },
+    manchas: {
+      emoji: "✦",
+      title: "Piel con Manchas e Hiperpigmentación",
+      subtitle: "Tu mayor prioridad es unificar el tono y proteger lo ganado.",
+      desc: "Las manchas aparecen cuando factores como el sol, las hormonas, el acné pasado o la inflamación estimulan en exceso la producción de melanina. No desaparecen solas, pero con los ingredientes correctos y constancia real sí se reducen de forma visible. La regla de oro: sin protector solar diario, ningún tratamiento funciona.",
+      tips: [
+        "SPF 50+ todos los días sin excepción — es la base de cualquier rutina antimanchas.",
+        "Vitamina C al 10–20% por las mañanas para inhibir melanina y dar luminosidad.",
+        "Niacinamida al 10% para unificar el tono y reducir la transferencia de pigmento.",
+        "Ácido kójico o ácido azelaico en sérum de noche para tratar manchas específicas.",
+        "Exfoliación suave con AHA (glicólico o láctico) 1–2 veces por semana para renovar la piel.",
+      ]
     }
   };
 
@@ -569,7 +583,7 @@
 
     const wrap = document.getElementById("optionsWrap");
     wrap.innerHTML = "";
-    const letters = ["A", "B", "C", "D"];
+    const letters = ["A", "B", "C", "D", "E"];
     q.options.forEach((opt, i) => {
       const div = document.createElement("div");
       div.className = "option" + (answers[current] === i ? " selected" : "");
@@ -613,15 +627,18 @@
   }
 
   function showResult() {
-    const scores = { oily: 0, dry: 0, combo: 0, normal: 0, aging: 0, sensitive: 0 };
+    const scores = { oily: 0, dry: 0, combo: 0, normal: 0, aging: 0, sensitive: 0, manchas: 0 };
     answers.forEach((answerIndex, qIndex) => {
       if (answerIndex !== null) {
         const type = questions[qIndex].options[answerIndex].type;
-        scores[type]++;
+        if (scores[type] !== undefined) scores[type]++;
       }
     });
 
-    const winner = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
+    // Q1 determina directamente el resultado; "unknown" usa el scoring del resto de preguntas
+    const q1Type = answers[0] !== null ? questions[0].options[answers[0]].type : null;
+    const winner = (q1Type && q1Type !== 'unknown') ? q1Type
+      : Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
 
     // Guardado final con resultado completo
     saveProgress({ isCompleted: true, resultType: winner, scores });
