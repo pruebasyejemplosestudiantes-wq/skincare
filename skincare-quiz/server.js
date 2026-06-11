@@ -10,7 +10,6 @@ const pool = new Pool({
   ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
 });
 
-// Crea las tablas automáticamente si no existen (safe: usa IF NOT EXISTS)
 async function runMigrations() {
   const sql = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
   await pool.query(sql);
@@ -20,11 +19,12 @@ async function runMigrations() {
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// POST /api/submit — guarda usuario + respuestas al terminar el quiz
-app.post('/api/submit', async (req, res) => {
-  const { userId, answers, resultType, scores } = req.body;
+// POST /api/save — crea o actualiza una respuesta (parcial o completa)
+// Body: { userId, responseId?, answers, questionsDone, resultType?, scores?, isCompleted }
+app.post('/api/save', async (req, res) => {
+  const { userId, responseId, answers, questionsDone, resultType, scores, isCompleted } = req.body;
 
-  if (!userId || !answers || !resultType || !scores) {
+  if (!userId || !Array.isArray(answers)) {
     return res.status(400).json({ error: 'Faltan campos requeridos.' });
   }
 
@@ -32,7 +32,7 @@ app.post('/api/submit', async (req, res) => {
   const ua = req.headers['user-agent'] || '';
 
   try {
-    // Crea el usuario si no existe; actualiza user-agent en cada visita
+    // Upsert usuario
     await pool.query(
       `INSERT INTO quiz_users (id, ip_address, user_agent)
        VALUES ($1, $2, $3)
@@ -42,27 +42,65 @@ app.post('/api/submit', async (req, res) => {
       [userId, ip, ua]
     );
 
-    // Inserta la respuesta del quiz
-    const result = await pool.query(
-      `INSERT INTO quiz_responses (user_id, answers, result_type, scores)
-       VALUES ($1, $2::jsonb, $3, $4::jsonb)
-       RETURNING id, completed_at`,
-      [userId, JSON.stringify(answers), resultType, JSON.stringify(scores)]
-    );
+    let savedId;
 
-    res.json({ success: true, responseId: result.rows[0].id });
+    if (responseId) {
+      // Actualizar respuesta existente
+      const result = await pool.query(
+        `UPDATE quiz_responses
+         SET answers        = $1::jsonb,
+             questions_done = $2,
+             result_type    = $3,
+             scores         = $4::jsonb,
+             is_completed   = $5,
+             completed_at   = $6
+         WHERE id = $7 AND user_id = $8
+         RETURNING id`,
+        [
+          JSON.stringify(answers),
+          questionsDone,
+          resultType ?? null,
+          scores ? JSON.stringify(scores) : null,
+          isCompleted ?? false,
+          isCompleted ? new Date() : null,
+          responseId,
+          userId,
+        ]
+      );
+      savedId = result.rows[0]?.id;
+    } else {
+      // Crear nueva respuesta
+      const result = await pool.query(
+        `INSERT INTO quiz_responses (user_id, answers, questions_done, result_type, scores, is_completed, completed_at)
+         VALUES ($1, $2::jsonb, $3, $4, $5::jsonb, $6, $7)
+         RETURNING id`,
+        [
+          userId,
+          JSON.stringify(answers),
+          questionsDone,
+          resultType ?? null,
+          scores ? JSON.stringify(scores) : null,
+          isCompleted ?? false,
+          isCompleted ? new Date() : null,
+        ]
+      );
+      savedId = result.rows[0].id;
+    }
+
+    res.json({ success: true, responseId: savedId });
   } catch (err) {
-    console.error('[/api/submit]', err.message);
-    res.status(500).json({ error: 'Error al guardar las respuestas.' });
+    console.error('[/api/save]', err.message);
+    res.status(500).json({ error: 'Error al guardar.' });
   }
 });
 
-// GET /api/stats — resumen de resultados (uso interno / admin)
+// GET /api/stats — distribución de resultados completados
 app.get('/api/stats', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT result_type, COUNT(*)::int AS total
        FROM quiz_responses
+       WHERE is_completed = true
        GROUP BY result_type
        ORDER BY total DESC`
     );

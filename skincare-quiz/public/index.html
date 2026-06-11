@@ -509,6 +509,7 @@
 
   let current = 0;
   let answers = Array(10).fill(null);
+  let responseId = null; // ID de la fila en quiz_responses, se asigna al primer guardado
 
   // ── Identificador de usuario persistente (localStorage) ──────────────────
   function getUserId() {
@@ -520,25 +521,34 @@
     return id;
   }
 
-  // ── Enviar respuestas al backend ─────────────────────────────────────────
-  async function submitToServer(resultType, scores) {
+  // ── Guardar progreso en el backend (crea en primer llamado, actualiza luego) ──
+  async function saveProgress({ isCompleted = false, resultType = null, scores = null } = {}) {
+    const filledAnswers = answers
+      .map((optionIndex, questionIndex) =>
+        optionIndex !== null
+          ? { question: questionIndex, option: optionIndex, type: questions[questionIndex].options[optionIndex].type }
+          : null
+      )
+      .filter(Boolean);
+
     const payload = {
       userId: getUserId(),
-      answers: answers.map((optionIndex, questionIndex) => ({
-        question: questionIndex,
-        option: optionIndex,
-        type: questions[questionIndex].options[optionIndex].type,
-      })),
+      responseId,          // null la primera vez → crea nuevo; luego → actualiza
+      answers: filledAnswers,
+      questionsDone: filledAnswers.length,
       resultType,
       scores,
+      isCompleted,
     };
 
     try {
-      await fetch('/api/submit', {
+      const res = await fetch('/api/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      const data = await res.json();
+      if (data.responseId) responseId = data.responseId; // guarda el ID para updates futuros
     } catch (_) {
       // El quiz sigue funcionando aunque falle el guardado
     }
@@ -593,6 +603,8 @@
     } else {
       current++;
       renderQuestion();
+      // Guarda progreso parcial después de cada pregunta respondida
+      saveProgress();
     }
   }
 
@@ -611,8 +623,8 @@
 
     const winner = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
 
-    // Guardar en el servidor (en paralelo, no bloquea la UI)
-    submitToServer(winner, scores);
+    // Guardado final con resultado completo
+    saveProgress({ isCompleted: true, resultType: winner, scores });
 
     const r = results[winner];
     document.getElementById("rBadge").textContent = r.emoji;
@@ -637,6 +649,7 @@
   function restartQuiz() {
     current = 0;
     answers = Array(10).fill(null);
+    responseId = null; // nueva sesión de quiz → nueva fila en la BD
     document.getElementById("resultScreen").style.display = "none";
     document.getElementById("progressWrap").style.display = "block";
     document.getElementById("quizScreen").style.display = "block";
