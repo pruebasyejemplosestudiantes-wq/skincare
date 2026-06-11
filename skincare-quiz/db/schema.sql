@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS quiz_users (
     id          UUID        PRIMARY KEY,
     ip_address  TEXT,
     user_agent  TEXT,
+    email       TEXT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -45,8 +46,16 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
 DO $$ BEGIN
+  ALTER TABLE quiz_responses ALTER COLUMN completed_at DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
   ALTER TABLE quiz_responses ALTER COLUMN answers SET DEFAULT '[]';
 EXCEPTION WHEN OTHERS THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE quiz_users ADD COLUMN email TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
 -- Índices (después de garantizar que las columnas existen; se ignoran si ya existen o fallan)
 DO $$ BEGIN

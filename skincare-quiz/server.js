@@ -5,12 +5,15 @@ const path = require('path');
 
 const app = express();
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
-});
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.DATABASE_URL.includes('localhost') ? false : { rejectUnauthorized: false },
+    })
+  : null;
 
 async function runMigrations() {
+  if (!pool) { console.log('Sin DATABASE_URL — modo visual (sin BD).'); return; }
   const sql = fs.readFileSync(path.join(__dirname, 'db', 'schema.sql'), 'utf8');
   await pool.query(sql);
   console.log('Tablas verificadas/creadas correctamente.');
@@ -22,11 +25,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 // POST /api/save — crea o actualiza una respuesta (parcial o completa)
 // Body: { userId, responseId?, answers, questionsDone, resultType?, scores?, isCompleted }
 app.post('/api/save', async (req, res) => {
-  const { userId, responseId, answers, questionsDone, resultType, scores, isCompleted } = req.body;
+  const { userId, responseId, answers, questionsDone, resultType, scores, isCompleted, email } = req.body;
 
   if (!userId || !Array.isArray(answers)) {
     return res.status(400).json({ error: 'Faltan campos requeridos.' });
   }
+
+  if (!pool) return res.json({ success: true, responseId: 'demo-' + userId });
 
   const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
   const ua = req.headers['user-agent'] || '';
@@ -34,12 +39,13 @@ app.post('/api/save', async (req, res) => {
   try {
     // Upsert usuario
     await pool.query(
-      `INSERT INTO quiz_users (id, ip_address, user_agent)
-       VALUES ($1, $2, $3)
+      `INSERT INTO quiz_users (id, ip_address, user_agent, email)
+       VALUES ($1, $2, $3, $4)
        ON CONFLICT (id) DO UPDATE
          SET ip_address = EXCLUDED.ip_address,
-             user_agent  = EXCLUDED.user_agent`,
-      [userId, ip, ua]
+             user_agent  = EXCLUDED.user_agent,
+             email       = COALESCE(EXCLUDED.email, quiz_users.email)`,
+      [userId, ip, ua, email ?? null]
     );
 
     let savedId;

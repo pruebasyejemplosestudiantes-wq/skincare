@@ -256,6 +256,42 @@
     }
     .btn-restart:hover { background: #a84e38; }
 
+    /* EMAIL GATE */
+    .email-gate { text-align: center; padding: 10px 0; animation: fadeIn 0.4s ease; }
+    .email-gate .gate-icon { font-size: 2.6rem; margin-bottom: 16px; }
+    .email-gate h2 { font-size: 1.4rem; font-weight: normal; color: #4a2010; margin-bottom: 10px; }
+    .email-gate p { color: #8a5c40; font-size: 0.93rem; line-height: 1.6; margin-bottom: 24px; }
+    .email-input-wrap { position: relative; margin-bottom: 12px; }
+    .email-input {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1.5px solid #e8c4b0;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: #3a1e0a;
+      background: #fdf8f5;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .email-input:focus { border-color: #c26045; background: #fff; }
+    .email-input.invalid { border-color: #e05040; }
+    .email-error { color: #c04030; font-size: 0.82rem; margin-bottom: 14px; display: none; }
+    .btn-reveal {
+      width: 100%;
+      padding: 14px;
+      background: #c26045;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    .btn-reveal:hover { background: #a84e38; }
+    .email-disclaimer { font-size: 0.78rem; color: #b07a5a; margin-top: 12px; font-style: italic; }
+
     /* INTRO */
     .intro { text-align: center; padding: 10px 0 4px; }
     .intro p { color: #8a5c40; font-size: 0.93rem; line-height: 1.6; margin-bottom: 24px; }
@@ -314,6 +350,19 @@
         <button class="btn btn-ghost" id="btnBack" onclick="prevQ()" style="display:none">← Atrás</button>
         <button class="btn btn-primary" id="btnNext" onclick="nextQ()" disabled>Siguiente →</button>
       </div>
+    </div>
+
+    <!-- EMAIL GATE -->
+    <div class="email-gate" id="emailGate" style="display:none">
+      <div class="gate-icon">✉️</div>
+      <h2>¡Tu diagnóstico está listo!</h2>
+      <p>Ingresa tu email para ver tu rutina de skincare personalizada. También te enviaremos consejos adaptados a tu tipo de piel.</p>
+      <div class="email-input-wrap">
+        <input type="email" class="email-input" id="emailInput" placeholder="tu@email.com" oninput="clearEmailError()" onkeydown="if(event.key==='Enter') submitEmail()" />
+      </div>
+      <div class="email-error" id="emailError">Por favor ingresa un email válido.</div>
+      <button class="btn-reveal" onclick="submitEmail()">Ver mi resultado →</button>
+      <p class="email-disclaimer">No spam. Solo tu diagnóstico y tips de skincare.</p>
     </div>
 
     <!-- RESULT -->
@@ -524,6 +573,8 @@
   let current = 0;
   let answers = Array(10).fill(null);
   let responseId = null; // ID de la fila en quiz_responses, se asigna al primer guardado
+  let pendingWinner = null;
+  let pendingScores = null;
 
   // ── Identificador de usuario persistente (localStorage) ──────────────────
   function getUserId() {
@@ -536,7 +587,7 @@
   }
 
   // ── Guardar progreso en el backend (crea en primer llamado, actualiza luego) ──
-  async function saveProgress({ isCompleted = false, resultType = null, scores = null } = {}) {
+  async function saveProgress({ isCompleted = false, resultType = null, scores = null, email = null } = {}) {
     const filledAnswers = answers
       .map((optionIndex, questionIndex) =>
         optionIndex !== null
@@ -553,6 +604,7 @@
       resultType,
       scores,
       isCompleted,
+      email,
     };
 
     try {
@@ -635,14 +687,44 @@
       }
     });
 
-    // Q1 determina directamente el resultado; "unknown" usa el scoring del resto de preguntas
     const q1Type = answers[0] !== null ? questions[0].options[answers[0]].type : null;
     const winner = (q1Type && q1Type !== 'unknown') ? q1Type
       : Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
 
-    // Guardado final con resultado completo
-    saveProgress({ isCompleted: true, resultType: winner, scores });
+    pendingWinner = winner;
+    pendingScores = scores;
 
+    document.getElementById("progressWrap").style.display = "none";
+    document.getElementById("quizScreen").style.display = "none";
+    document.getElementById("emailGate").style.display = "block";
+    document.getElementById("emailInput").focus();
+  }
+
+  function clearEmailError() {
+    document.getElementById("emailInput").classList.remove("invalid");
+    document.getElementById("emailError").style.display = "none";
+  }
+
+  async function submitEmail() {
+    const input = document.getElementById("emailInput");
+    const email = input.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      input.classList.add("invalid");
+      document.getElementById("emailError").style.display = "block";
+      input.focus();
+      return;
+    }
+
+    // Guardado final con email + resultado completo
+    await saveProgress({ isCompleted: true, resultType: pendingWinner, scores: pendingScores, email });
+
+    document.getElementById("emailGate").style.display = "none";
+    renderResult(pendingWinner);
+  }
+
+  function renderResult(winner) {
     const r = results[winner];
     document.getElementById("rBadge").textContent = r.emoji;
     document.getElementById("rTitle").textContent = r.title;
@@ -654,8 +736,6 @@
       `<div class="tip-item"><div class="tip-dot"></div><span>${t}</span></div>`
     ).join("");
 
-    document.getElementById("progressWrap").style.display = "none";
-    document.getElementById("quizScreen").style.display = "none";
     const res = document.getElementById("resultScreen");
     res.style.display = "block";
     res.style.animation = "none";
@@ -666,8 +746,13 @@
   function restartQuiz() {
     current = 0;
     answers = Array(10).fill(null);
-    responseId = null; // nueva sesión de quiz → nueva fila en la BD
+    responseId = null;
+    pendingWinner = null;
+    pendingScores = null;
     document.getElementById("resultScreen").style.display = "none";
+    document.getElementById("emailGate").style.display = "none";
+    document.getElementById("emailInput").value = "";
+    clearEmailError();
     document.getElementById("progressWrap").style.display = "block";
     document.getElementById("quizScreen").style.display = "block";
     renderQuestion();
